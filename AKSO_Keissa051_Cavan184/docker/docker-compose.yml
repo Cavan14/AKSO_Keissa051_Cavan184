@@ -1,0 +1,151 @@
+# version: '3.9' karna sudah modern tidak perlu dideklarasikan
+name: "Project UAS AKSO Cavan dan Keissa"
+
+services:
+# web pertama
+  # aplikasi wajib http server
+  nginx:
+    image: nginx:latest
+    container_name: nginx_server
+    ports:
+      - "8080:80"
+    volumes:
+      - ./html:/usr/share/nginx/html
+    networks:
+      - app-network
+    depends_on:
+      - wordpress
+      - mysql
+  # aplikasi wajib database server
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: wordpress_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+  # aplikasi opsional dari webserver
+  wordpress:
+    image: wordpress:latest
+    container_name: wordpress_cms
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_USER: user
+      WORDPRESS_DB_PASSWORD: userpassword
+      WORDPRESS_DB_NAME: wordpress_db
+    ports:
+      - "8000:80"
+    volumes:
+      - wordpress_data:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - mysql
+
+# web kedua
+  # database server
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb_server
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: phpmyadmin_db
+      MYSQL_USER: user
+      MYSQL_PASSWORD: userpassword
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - app-network
+  # webservice
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: mariadb
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "8087:80"
+    networks:
+      - app-network
+    depends_on:
+      - mariadb
+
+# web ketiga
+  # database server
+  mongodb:
+    image: mongo:latest
+    container_name: mongo_db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: password
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+  # http server
+  apache_http:
+    image: httpd:latest
+    container_name: apache_http_server
+    environment:
+      PADAKNO_MBE_MONGO: mongodb
+    ports:
+      - "8086:80"  
+    volumes:
+      - ./apache-html:/usr/local/apache2/htdocs/  
+    networks:
+      - app-network
+    depends_on:
+      - mongodb
+
+# web keempat
+  # database server
+  postgres:
+    image: postgres:15
+    container_name: postgres_server
+    environment:
+      POSTGRES_USER: admin       
+      POSTGRES_PASSWORD: admin   
+      POSTGRES_DB: mydatabase    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  
+    ports:
+      - "5432:5432"  
+    networks:
+      - app-network
+  # http server
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_server
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@pgadmin.com  
+      PGADMIN_DEFAULT_PASSWORD: admin          
+    ports:
+      - "5050:80"  
+    networks:
+      - app-network
+    depends_on:
+      - postgres  
+    
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  wordpress_data:
+  mariadb_data:
+  mongo_data:
+  nginx-html:
+  postgres_data:
