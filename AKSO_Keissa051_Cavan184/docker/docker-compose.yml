@@ -9,6 +9,9 @@ services:
     container_name: nginx_server
     ports:
       - "8080:80"
+    configs:
+      - source: nginx_convig
+        target: /etc/nginx/nginx.conf
     volumes:
       - ./html:/usr/share/nginx/html
     networks:
